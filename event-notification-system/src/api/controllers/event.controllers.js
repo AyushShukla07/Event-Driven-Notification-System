@@ -1,6 +1,8 @@
-import { eventQueue } from "../../queues/queue.connection.js";
+// import { eventQueue } from "../../queues/queue.connection.js";
 import { isDuplicateEvent, markEventProcessed } from "../../utils/idempotency.js";
 import { v4 as uuidv4 } from 'uuid';
+import { emailQueue, smsQueue, pushQueue } from "../../queues/notification.queue.js";
+
 
 export const ingestEvent = async (req, res) => {
     const idempotencyKey = req.headers['idempotency-key'];
@@ -28,13 +30,29 @@ export const ingestEvent = async (req, res) => {
     };
 
     try {
-        await eventQueue.add(eventType, event, {
-            attempts: 5,
-            backoff: {
-                type: 'exponential',
-                delay: 1000
-            }
-        });
+        // await eventQueue.add(eventType, event, {
+        //     attempts: 5,
+        //     backoff: {
+        //         type: 'exponential',
+        //         delay: 1000
+        //     }
+        // });
+
+        await Promise.all([
+            emailQueue.add('send_email', event, {
+                attempts: 5,
+                backoff: { type: 'exponential', delay: 1000 }
+            }),
+            smsQueue.add('send_sms', event, {
+                attempts: 5,
+                backoff: { type: 'exponential', delay: 1000 }
+            }),
+            pushQueue.add('send_push', event, {
+                attempts: 5,
+                backoff: { type: 'exponential', delay: 1000 }
+            })
+        ]);
+
         await markEventProcessed(idempotencyKey);
 
         return res.status(202).json({
