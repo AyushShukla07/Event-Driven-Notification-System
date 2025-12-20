@@ -36,7 +36,7 @@ const worker = new Worker(queueName, async job => {
 
         await log.save();
 
-        if (job.attemptsMade >= job.opts.attempts) {
+        if (job.attemptsMade+1 >= job.opts.attempts) {
             await dlqQueue.add('email_failed', {
                 eventId,
                 userId,
