@@ -2,8 +2,10 @@ import pkg from 'bullmq';
 import { sendEmail } from '../services/email.service.js';
 import NotificationLog from '../models/NotificationLog.js';
 import redis from '../config/redis.js';
+import { dlqQueue } from '../queues/dlq.queue.js';
+import { logger } from '../utils/logger.js';
 
-const { Worker} = pkg;
+const { Worker } = pkg;
 
 const queueName = 'email';
 
@@ -34,10 +36,16 @@ const worker = new Worker(queueName, async job => {
         } else {
             log.status = 'sent';
         }
+
+        log.attempt = job.attemptsMade + 1;
         await log.save();
-        console.log(`Email sent successfully for event ${eventId}`);
+
+        // console.log(`Email sent successfully for event ${eventId}`);
+        logger.info('Email sent', { eventId, userId });
+
     } catch (err) {
-        console.log(`Email failed for event ${eventId}`, err);
+        // console.log(`Email failed for event ${eventId}`, err);
+        logger.error('Email failed',{eventId,error:err.message});
         if (!log) {
             log = new NotificationLog({
                 eventId,
@@ -51,7 +59,21 @@ const worker = new Worker(queueName, async job => {
             log.status = 'failed';
             log.error = err.message;
         }
+
+        log.attempt = job.attemptsMade + 1;
+
         await log.save();
+
+        if (job.attemptsMade >= job.opts.attempts) {
+            await dlqQueue.add('email_failed', {
+                eventId,
+                userId,
+                eventType,
+                channel: 'email',
+                error: err.message
+            });
+        }
+
         throw err;
     }
 }, { connection: redis, attempts: 5, backoff: { type: 'exponential', delay: 1000 } });

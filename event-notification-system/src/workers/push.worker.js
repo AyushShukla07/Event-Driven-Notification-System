@@ -2,6 +2,7 @@ import pkg from 'bullmq';
 import { sendPush } from '../services/push.service.js';
 import NotificationLog from '../models/NotificationLog.js';
 import redis from '../config/redis.js';
+import { dlqQueue } from '../queues/dlq.queue.js';
 
 const { Worker } = pkg;
 
@@ -19,6 +20,9 @@ const worker = new Worker(queueName, async job => {
 
         if (!log) log = new NotificationLog({ eventId, userId, eventType, channel: 'push', status: 'sent' });
         else log.status = 'sent';
+
+        log.attempt = job.attemptsMade + 1;
+
         await log.save();
         console.log(`Push notification sent successfully for event ${eventId}`);
     } catch (err) {
@@ -27,7 +31,21 @@ const worker = new Worker(queueName, async job => {
             log.status = 'failed';
             log.error = err.message;
         }
+
+        log.attempt = job.attemptsMade + 1;
+
         await log.save();
+
+        if (job.attemptsMade >= job.opts.attempts) {
+            await dlqQueue.add('email_failed', {
+                eventId,
+                userId,
+                eventType,
+                channel: 'email',
+                error: err.message
+            });
+        }
+
         throw err;
     }
 }, { connection: redis, attempts: 5, backoff: { type: 'exponential', delay: 1000 } });
