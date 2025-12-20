@@ -3,6 +3,7 @@ import { sendSMS } from '../services/sms.service.js';
 import NotificationLog from '../models/NotificationLog.js';
 import redis from '../config/redis.js';
 import { dlqQueue } from '../queues/dlq.queue.js';
+import { incrementMetric } from '../utils/metrics.js';
 
 const { Worker } = pkg;
 
@@ -28,6 +29,9 @@ const worker = new Worker(queueName, async job => {
 
         await log.save();
         console.log(`SMS sent successfully for event ${eventId}`);
+
+        await incrementMetric('metrics:sms:success');
+
     } catch (err) {
         if (!log) log = new NotificationLog({ eventId, userId, eventType, channel: 'sms', status: 'failed', error: err.message });
         else {

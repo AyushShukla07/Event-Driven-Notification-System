@@ -3,6 +3,7 @@ import { sendPush } from '../services/push.service.js';
 import NotificationLog from '../models/NotificationLog.js';
 import redis from '../config/redis.js';
 import { dlqQueue } from '../queues/dlq.queue.js';
+import { incrementMetric } from '../utils/metrics.js';
 
 const { Worker } = pkg;
 
@@ -25,6 +26,9 @@ const worker = new Worker(queueName, async job => {
 
         await log.save();
         console.log(`Push notification sent successfully for event ${eventId}`);
+
+        await incrementMetric('metrics:push:success');
+
     } catch (err) {
         if (!log) log = new NotificationLog({ eventId, userId, eventType, channel: 'push', status: 'failed', error: err.message });
         else {

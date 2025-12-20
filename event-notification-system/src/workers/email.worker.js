@@ -4,6 +4,7 @@ import NotificationLog from '../models/NotificationLog.js';
 import redis from '../config/redis.js';
 import { dlqQueue } from '../queues/dlq.queue.js';
 import { logger } from '../utils/logger.js';
+import { incrementMetric } from '../utils/metrics.js';
 
 // const { Worker } = pkg;
 
@@ -43,6 +44,8 @@ const worker = new Worker(queueName, async job => {
         // console.log(`Email sent successfully for event ${eventId}`);
         logger.info('Email sent', { eventId, userId });
 
+        await incrementMetric('metrics:email:success');
+
     } catch (err) {
         // console.log(`Email failed for event ${eventId}`, err);
         logger.error('Email failed', { eventId, error: err.message });
@@ -64,7 +67,7 @@ const worker = new Worker(queueName, async job => {
 
         await log.save();
 
-        if (job.attemptsMade+1 >= job.opts.attempts) {
+        if (job.attemptsMade + 1 >= job.opts.attempts) {
             await dlqQueue.add('email_failed', {
                 eventId,
                 userId,
