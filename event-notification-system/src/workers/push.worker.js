@@ -1,10 +1,12 @@
-import { Worker, QueueScheduler } from 'bullmq';
+import pkg from 'bullmq';
 import { sendPush } from '../services/push.service.js';
 import NotificationLog from '../models/NotificationLog.js';
 import redis from '../config/redis.js';
 
+const { Worker } = pkg;
+
 const queueName = 'push';
-new QueueScheduler(queueName, { connection: redis });
+// new QueueScheduler(queueName, { connection: redis });
 
 const worker = new Worker(queueName, async job => {
     const { eventId, userId, data, eventType } = job.data;

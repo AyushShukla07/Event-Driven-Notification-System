@@ -15,7 +15,8 @@ export const ingestEvent = async (req, res) => {
         return res.status(409).json({ error: 'Duplicate event' });
     }
 
-    const { eventType, userId, data } = req.body;
+    const { eventType, data } = req.body;
+    const userId=req.user.userId;
 
     if (!eventType || !userId || !data) {
         return res.status(400).json({ error: 'Invalid event payload' });
