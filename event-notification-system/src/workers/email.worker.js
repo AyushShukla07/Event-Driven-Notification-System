@@ -1,11 +1,11 @@
-import pkg from 'bullmq';
+import { Worker } from 'bullmq';
 import { sendEmail } from '../services/email.service.js';
 import NotificationLog from '../models/NotificationLog.js';
 import redis from '../config/redis.js';
 import { dlqQueue } from '../queues/dlq.queue.js';
 import { logger } from '../utils/logger.js';
 
-const { Worker } = pkg;
+// const { Worker } = pkg;
 
 const queueName = 'email';
 
@@ -45,7 +45,7 @@ const worker = new Worker(queueName, async job => {
 
     } catch (err) {
         // console.log(`Email failed for event ${eventId}`, err);
-        logger.error('Email failed',{eventId,error:err.message});
+        logger.error('Email failed', { eventId, error: err.message });
         if (!log) {
             log = new NotificationLog({
                 eventId,
@@ -76,6 +76,16 @@ const worker = new Worker(queueName, async job => {
 
         throw err;
     }
-}, { connection: redis, attempts: 5, backoff: { type: 'exponential', delay: 1000 } });
+}, { connection: redis });
+
+worker.on('completed', job => {
+    logger.info('Email job completed', { jobId: job.id });
+});
+worker.on('failed', (job, err) => {
+    logger.error('Email job failed', {
+        jobId: job?.id,
+        error: err.message
+    });
+});
 
 export default worker;
