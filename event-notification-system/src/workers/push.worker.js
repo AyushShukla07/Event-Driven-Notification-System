@@ -11,26 +11,26 @@ const queueName = 'push';
 // new QueueScheduler(queueName, { connection: redis });
 
 const worker = new Worker(queueName, async job => {
-    const { eventId, userId, data, eventType } = job.data;
+    const { correlationId, userId, data, eventType } = job.data;
 
-    let log = await NotificationLog.findOne({ eventId, userId, channel: 'push' });
+    let log = await NotificationLog.findOne({ correlationId, userId, channel: 'push' });
     if (log?.status === 'sent') return;
 
     try {
         await sendPush({ userId, data });
 
-        if (!log) log = new NotificationLog({ eventId, userId, eventType, channel: 'push', status: 'sent' });
+        if (!log) log = new NotificationLog({ correlationId, userId, eventType, channel: 'push', status: 'sent' });
         else log.status = 'sent';
 
         log.attempt = job.attemptsMade + 1;
 
         await log.save();
-        console.log(`Push notification sent successfully for event ${eventId}`);
+        console.log(`Push notification sent successfully for event ${correlationId}`);
 
         await incrementMetric('metrics:push:success');
 
     } catch (err) {
-        if (!log) log = new NotificationLog({ eventId, userId, eventType, channel: 'push', status: 'failed', error: err.message });
+        if (!log) log = new NotificationLog({ correlationId, userId, eventType, channel: 'push', status: 'failed', error: err.message });
         else {
             log.status = 'failed';
             log.error = err.message;
@@ -42,7 +42,7 @@ const worker = new Worker(queueName, async job => {
 
         if (job.attemptsMade+1 >= job.opts.attempts) {
             await dlqQueue.add('email_failed', {
-                eventId,
+                correlationId,
                 userId,
                 eventType,
                 channel: 'email',

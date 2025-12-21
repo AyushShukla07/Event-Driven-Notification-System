@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const NotificationLogSchema = new mongoose.Schema({
-    eventId: {
+    correlationId: {
         type: String,
         required: true
     },

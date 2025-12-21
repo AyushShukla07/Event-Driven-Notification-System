@@ -4,6 +4,7 @@ import adminRoutes from './api/routes/admin.routes.js';
 import metricsRoutes from './api/routes/metrics.routes.js';
 import dlqRoutes from './api/routes/dlq.routes.js';
 import healthRoutes from './api/routes/health.routes.js';
+import debugRoutes from './api/routes/debug.routes.js';
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api', metricsRoutes);
 app.use('/api', dlqRoutes);
 app.use('/', healthRoutes);
+app.use('/api/debug', debugRoutes);
 
 // app.get('/health', (_, res) => {
 //     res.json({ status: 'ok' });

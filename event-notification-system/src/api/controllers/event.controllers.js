@@ -2,6 +2,7 @@
 import { isDuplicateEvent, markEventProcessed } from "../../utils/idempotency.js";
 import { v4 as uuidv4 } from 'uuid';
 import { emailQueue, smsQueue, pushQueue } from "../../queues/notification.queue.js";
+import { logger } from "../../utils/logger.js";
 
 
 export const ingestEvent = async (req, res) => {
@@ -16,14 +17,16 @@ export const ingestEvent = async (req, res) => {
     }
 
     const { eventType, data } = req.body;
-    const userId=req.user.userId;
+    const userId = req.user.userId;
 
     if (!eventType || !userId || !data) {
         return res.status(400).json({ error: 'Invalid event payload' });
     }
 
+    const correlationId = idempotencyKey || uuidv4();
+
     const event = {
-        eventId: idempotencyKey || uuidv4(),
+        correlationId,
         eventType,
         userId,
         data,
@@ -56,12 +59,21 @@ export const ingestEvent = async (req, res) => {
 
         await markEventProcessed(idempotencyKey);
 
+        logger.info('Event ingested', {
+            correlationId,
+            eventType,
+            userId
+        });
+
         return res.status(202).json({
             message: 'Event accepted',
-            eventId: event.eventId
+            correlationId: event.correlationId
         });
+
     } catch (err) {
         console.error('Queue error: ', err);
         return res.status(500).json({ error: 'Failed to enqueue event' });
     }
 };
+
+

@@ -13,10 +13,10 @@ const queueName = 'email';
 // new QueueScheduler(queueName, { connection: redis });
 
 const worker = new Worker(queueName, async job => {
-    const { eventId, userId, data, eventType } = job.data;
+    const { correlationId, userId, data, eventType } = job.data;
 
     let log = await NotificationLog.findOne({
-        eventId,
+        correlationId,
         userId,
         channel: 'email'
     });
@@ -28,7 +28,7 @@ const worker = new Worker(queueName, async job => {
 
         if (!log) {
             log = new NotificationLog({
-                eventId,
+                correlationId,
                 userId,
                 eventType,
                 channel: 'email',
@@ -41,17 +41,17 @@ const worker = new Worker(queueName, async job => {
         log.attempt = job.attemptsMade + 1;
         await log.save();
 
-        // console.log(`Email sent successfully for event ${eventId}`);
-        logger.info('Email sent', { eventId, userId });
+        // console.log(`Email sent successfully for event ${correlationId}`);
+        logger.info('Email sent', { correlationId, userId });
 
         await incrementMetric('metrics:email:success');
 
     } catch (err) {
-        // console.log(`Email failed for event ${eventId}`, err);
-        logger.error('Email failed', { eventId, error: err.message });
+        // console.log(`Email failed for event ${correlationId}`, err);
+        logger.error('Email failed', { correlationId, error: err.message });
         if (!log) {
             log = new NotificationLog({
-                eventId,
+                correlationId,
                 userId,
                 eventType,
                 channel: 'email',
@@ -69,7 +69,7 @@ const worker = new Worker(queueName, async job => {
 
         if (job.attemptsMade + 1 >= job.opts.attempts) {
             await dlqQueue.add('email_failed', {
-                eventId,
+                correlationId,
                 userId,
                 eventType,
                 channel: 'email',
@@ -82,11 +82,17 @@ const worker = new Worker(queueName, async job => {
 }, { connection: redis });
 
 worker.on('completed', job => {
-    logger.info('Email job completed', { jobId: job.id });
+    logger.info('Email job completed', {
+        correlationId,
+        userId,
+        channel: 'email'
+    });
 });
 worker.on('failed', (job, err) => {
     logger.error('Email job failed', {
-        jobId: job?.id,
+        correlationId,
+        userId,
+        channel: 'email',
         error: err.message
     });
 });
