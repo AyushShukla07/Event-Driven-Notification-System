@@ -14,3 +14,4 @@ export const initRedis = async () => {
     throw err;
   }
 };
+

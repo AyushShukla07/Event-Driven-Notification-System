@@ -44,11 +44,11 @@ const worker = new Worker(queueName, async job => {
         await log.save();
 
         if (job.attemptsMade + 1 >= job.opts.attempts) {
-            await dlqQueue.add('email_failed', {
+            await dlqQueue.add('notification_failed', {
                 correlationId,
                 userId,
                 eventType,
-                channel: 'email',
+                channel: 'push',
                 error: err.message
             });
         }

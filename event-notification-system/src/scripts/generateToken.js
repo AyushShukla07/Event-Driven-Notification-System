@@ -1,4 +1,7 @@
 import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const token = jwt.sign(
     { userId: 'user1', role: 'user' },
@@ -8,4 +11,4 @@ const token = jwt.sign(
     }
 );
 
-console.log(token);
+console.log(token); 

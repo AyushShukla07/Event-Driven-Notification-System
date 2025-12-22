@@ -1,22 +1,22 @@
 import dotenv from 'dotenv';
 dotenv.config();
-
+import './config/env.js';
 import app from './app.js';
-import { initRedis, redis } from './queues/queue.connection.js';
-
-import './workers/dlq.worker.js';
-import './workers/email.worker.js';
-import './workers/sms.worker.js';
-import './workers/push.worker.js';
-import './queues/event.worker.js';
-
-
+import { initRedis} from './queues/queue.connection.js';
+import redis from './config/redis.js';
+import { connectMongo } from './config/mongoDB.js';
 
 const PORT = process.env.PORT || 4000;
 
 const startServer = async () => {
   try {
+    await connectMongo();
     await initRedis();
+
+    await import('./workers/dlq.worker.js');
+    await import('./workers/email.worker.js');
+    await import('./workers/sms.worker.js');
+    await import('./workers/push.worker.js');
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
@@ -26,6 +26,8 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+
+// import './queues/event.worker.js';
 
 startServer();
 

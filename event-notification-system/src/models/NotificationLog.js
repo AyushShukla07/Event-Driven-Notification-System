@@ -31,10 +31,10 @@ const NotificationLogSchema = new mongoose.Schema({
         type: String,
         default: null
     },
-    timeStamp: {
-        type: Date,
-        default: Date.now
-    }
-});
+    // type: Date,
+    // default: Date.now
+}, { timestamps: true });
+
+NotificationLogSchema.index({ correlationId: 1, channel: 1 });
 
 export default mongoose.model('NotificationLog', NotificationLogSchema);

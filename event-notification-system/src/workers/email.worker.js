@@ -67,7 +67,7 @@ const worker = new Worker(queueName, async job => {
 
         await log.save();
 
-        if (job.attemptsMade + 1 >= job.opts.attempts) {
+        if (job.attemptsMade + 1 >= (job.opts.attempts ?? 1)) {
             await dlqQueue.add('email_failed', {
                 correlationId,
                 userId,
@@ -83,15 +83,15 @@ const worker = new Worker(queueName, async job => {
 
 worker.on('completed', job => {
     logger.info('Email job completed', {
-        correlationId,
-        userId,
+        correlationId:job.data.correlationId,
+        userId:job.data.userId,
         channel: 'email'
     });
 });
 worker.on('failed', (job, err) => {
     logger.error('Email job failed', {
-        correlationId,
-        userId,
+        correlationId:job.data.correlationId,
+        userId:job.data.userId,
         channel: 'email',
         error: err.message
     });

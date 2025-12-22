@@ -1,7 +1,7 @@
 import redis from '../../config/redis.js';
 
 export const rateLimiter = async (req, res, next) => {
-    const userId = req.body.userId;
+    const userId = req.user?.userId;
 
     if (!userId) return res.status(400).json({ error: 'userId missing for rate limiting' });
 

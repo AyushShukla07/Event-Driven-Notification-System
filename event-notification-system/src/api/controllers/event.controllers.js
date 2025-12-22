@@ -67,7 +67,7 @@ export const ingestEvent = async (req, res) => {
 
         return res.status(202).json({
             message: 'Event accepted',
-            correlationId: event.correlationId
+            correlationId
         });
 
     } catch (err) {

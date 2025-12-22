@@ -1,2 +1,29 @@
-﻿# Event-Driven-Notification-System
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyaWQiOiJ1c2VyMSIsImlhdCI6MTc2NjIyMjc3NiwiZXhwIjoxNzY2MjI2Mzc2fQ.03e4lwMNhHfafXG2mpcF2wBt1zU4xbBbxGmoNpUR_uI
+﻿# Event-Driven Notification System
+
+A scalable backend system to process and deliver notifications
+(email, SMS, push) using an event-driven architecture.
+
+## Features
+- JWT-secured event ingestion API
+- Redis-based rate limiting
+- Idempotent event handling
+- Asynchronous processing with BullMQ
+- Retry with exponential backoff
+- Dead Letter Queue (DLQ)
+- Manual retry via admin API
+- Distributed tracing using correlationId
+- Metrics & health endpoints
+- Graceful shutdown
+
+## Tech Stack
+- Node.js, Express
+- Redis, BullMQ
+- MongoDB
+- Docker
+
+## Key Endpoints
+- POST /api/events
+- GET /api/metrics
+- GET /api/health
+- POST /api/admin/retry
+- GET /api/debug/trace/:correlationId

@@ -1,4 +1,4 @@
-import redis from "../config/redis";
+import redis from "../config/redis.js";
 
 export const incrementMetric = async (key) => {
     await redis.incr(key);
